@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { finishSurface } from './surface-finish.ts';
 import { createCrescentRig } from './crescent-rig.ts';
 
 // Profile coordinates follow the original Crescent Rose production render:
@@ -24,11 +26,11 @@ export function createCrescentRose() {
   const root = new THREE.Group();
   root.name = 'Crescent Rose — extended scythe';
   const red = new THREE.MeshPhysicalMaterial({
-    color: '#b9152a',
-    metalness: 0.48,
-    roughness: 0.31,
-    clearcoat: 0.32,
-    clearcoatRoughness: 0.28,
+    color: '#ac0920',
+    metalness: 0.3,
+    roughness: 0.29,
+    clearcoat: 0.72,
+    clearcoatRoughness: 0.2,
   });
   const deepRed = new THREE.MeshStandardMaterial({
     color: '#700e19',
@@ -36,7 +38,7 @@ export function createCrescentRose() {
     roughness: 0.4,
   });
   const redEdge = new THREE.MeshStandardMaterial({
-    color: '#d02b38',
+    color: '#c71a2b',
     metalness: 0.48,
     roughness: 0.3,
   });
@@ -50,13 +52,15 @@ export function createCrescentRose() {
     metalness: 0.25,
     roughness: 0.65,
   });
-  const steel = new THREE.MeshStandardMaterial({
-    color: '#b7c2cb',
-    metalness: 0.88,
-    roughness: 0.25,
+  const steel = new THREE.MeshPhysicalMaterial({
+    color: '#aab5c1',
+    metalness: 1,
+    roughness: 0.27,
+    anisotropy: 0.55,
+    anisotropyRotation: Math.PI / 2,
   });
   const edge = new THREE.MeshStandardMaterial({
-    color: '#eef2f4',
+    color: '#dfe6ec',
     metalness: 0.85,
     roughness: 0.2,
   });
@@ -71,8 +75,8 @@ export function createCrescentRose() {
     roughness: 0.82,
   });
   const lens = new THREE.MeshPhysicalMaterial({
-    color: '#314b4b',
-    metalness: 0.78,
+    color: '#386d79',
+    metalness: 0.6,
     roughness: 0.08,
     clearcoat: 1,
   });
@@ -141,7 +145,7 @@ export function createCrescentRose() {
     thickness: number,
     material: THREE.Material,
     z = 0,
-    bevel = 0.012,
+    bevel = 0.018,
   ) => {
     const commands =
       typeof path[0][0] === 'number'
@@ -150,9 +154,9 @@ export function createCrescentRose() {
     const geometry = new THREE.ExtrudeGeometry(makeShape(commands), {
       depth: thickness,
       bevelEnabled: bevel > 0,
-      bevelThickness: bevel,
+      bevelThickness: Math.min(bevel, thickness * 0.3),
       bevelSize: bevel,
-      bevelSegments: 2,
+      bevelSegments: 3,
       curveSegments: 24,
       steps: 1,
     });
@@ -181,7 +185,13 @@ export function createCrescentRose() {
   ) => {
     const p = point(u, v);
     const m = mesh(
-      new THREE.BoxGeometry(height / SCALE, width / SCALE, depth),
+      new RoundedBoxGeometry(
+        height / SCALE,
+        width / SCALE,
+        depth,
+        2,
+        Math.min(0.018, height / SCALE / 5, width / SCALE / 5, depth / 5),
+      ),
       material,
       name,
     );
@@ -227,7 +237,7 @@ export function createCrescentRose() {
     radius: number,
     material: THREE.Material,
     z = 0,
-    segments = 16,
+    segments = 32,
   ) => {
     const a = point(...start);
     const b = point(...end);
@@ -858,7 +868,6 @@ export function createCrescentRose() {
   plate(
     'Butt spike central tang',
     [
-      [337, 362],
       [437, 343],
       [494, 343],
       [503, 349],
@@ -887,7 +896,6 @@ export function createCrescentRose() {
   panel(
     'Butt red centerline',
     [
-      [338, 362],
       [438, 357],
       [500, 358],
       [500, 366],
@@ -898,7 +906,7 @@ export function createCrescentRose() {
     0.018,
   );
   panel(
-    'Upper prong cutting edge',
+    'Stock tip upper cutting edge',
     [
       [338, 362],
       [437, 343],
@@ -910,7 +918,7 @@ export function createCrescentRose() {
     0.02,
   );
   panel(
-    'Lower prong cutting edge',
+    'Stock tip lower cutting edge',
     [
       [338, 362],
       [437, 381],
@@ -930,12 +938,12 @@ export function createCrescentRose() {
   bolt(555, 363, 0.161, 3.1);
 
   active = groups.blade;
-  disk('Lower folding hinge axle', 1624, 742, 7, 1.8, gunmetal, 0);
-  disk('Lower folding hinge cap', 1624, 742, 11, 0.08, deepRed, 0.84);
-  disk('Main telescoping hinge axle', 1684, 403, 8, 1.08, gunmetal, 0.15);
+  disk('Lower folding bearing housing', 1624, 742, 17, 0.42, black, -0.04);
+  disk('Lower articulated bearing sleeve', 1624, 742, 12, 0.38, gunmetal);
+  disk('Main folding pivot inner sleeve', 1684, 403, 16, 0.62, black, 0.02);
   active = groups.counterblade;
-  disk('Counter folding hinge axle', 1674, 359, 7, 0.95, gunmetal, -0.22);
-  disk('Counter folding hinge cap', 1674, 359, 10, 0.06, deepRed, -0.7);
+  disk('Counter folding bearing', 1674, 359, 13, 0.48, black, -0.04);
+  disk('Counter folding bearing inset', 1674, 359, 9, 0.51, gunmetal, -0.04);
   active = groups.receiver;
   plate(
     'Folding trigger grip',
@@ -962,10 +970,395 @@ export function createCrescentRose() {
     grip,
     0.018,
   );
-  // A bore visible behind the pronged muzzle; the whole segment retracts together.
+  // The muzzle belongs to the scythe head; the opposite end folds into a stock.
+  active = groups.blade;
+  tube('Head muzzle collar', [1747, 355], [1768, 355], 17, black);
+  tube('Head muzzle crown', [1766, 355], [1771, 355], 14, gunmetal);
+  tube('Head muzzle bore', [1771, 355], [1772, 355], 9, recess);
   active = groups.pommel;
-  tube('Muzzle bore surround', [436, 362], [447, 362], 8, gunmetal);
-  tube('Muzzle dark bore', [435, 362], [436, 362], 5, recess);
+  plate(
+    'Stock tip black blade',
+    [
+      [337, 362],
+      [437, 343],
+      [437, 381],
+    ],
+    0.12,
+    black,
+  );
+  panel(
+    'Stock tip red inlay',
+    [
+      [344, 362],
+      [433, 357],
+      [433, 366],
+    ],
+    0.083,
+    red,
+    0.014,
+  );
+  disk('Stock tip pivot', 438, 362, 6, 0.24, black);
+  bolt(438, 362, 0.135, 3);
+  addDetails();
+  // More substantial castings, with the same traced production silhouette.
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    // Bake local orientation before thickening; circular bearings stay circular.
+    o.geometry.applyQuaternion(o.quaternion);
+    o.quaternion.identity();
+    o.geometry.scale(1, 1, 1.65);
+    o.position.z *= 1.65;
+    finishSurface(o);
+  });
+  function addDetails() {
+    const ring = (
+      name: string,
+      u: number,
+      v: number,
+      outer: number,
+      inner: number,
+      z: number,
+      material: THREE.Material,
+    ) => {
+      const p = point(u, v);
+      for (const sign of [-1, 1]) {
+        const m = mesh(
+          new THREE.RingGeometry(inner / SCALE, outer / SCALE, 64),
+          material,
+          name,
+        );
+        m.position.set(p.x, p.y, sign * z);
+        if (sign < 0) m.rotation.y = Math.PI;
+      }
+    };
+    const seam = (name: string, start: P, end: P, z: number) => {
+      for (const sign of [-1, 1])
+        tube(name, start, end, 0.72, recess, z * sign, 8);
+    };
+    active = groups.blade;
+    // Retaining rings and drive splines are nested inside the visible pivot caps.
+    ring(
+      'Main folding pivot machined rim',
+      1684,
+      403,
+      31,
+      29.5,
+      0.255,
+      gunmetal,
+    );
+    ring('Main folding pivot witness ring', 1684, 403, 23, 22, 0.292, steel);
+    ring(
+      'Terminal bearing polished race',
+      1470,
+      881,
+      39,
+      36.5,
+      0.085,
+      gunmetal,
+    );
+    for (let i = 0; i < 16; i++) {
+      const a = (i * Math.PI) / 8;
+      for (const sign of [-1, 1]) {
+        const tooth = box(
+          'Main folding pivot spline',
+          1684 + 24 * Math.cos(a),
+          403 + 24 * Math.sin(a),
+          2,
+          5,
+          0.02,
+          black,
+          sign * 0.29,
+        );
+        tooth.rotation.z = a;
+      }
+    }
+    panel(
+      'Shoulder inset gasket',
+      [
+        [1574, 345],
+        [1590, 334],
+        [1630, 379],
+        [1629, 454],
+        [1569, 393],
+      ],
+      0.269,
+      recess,
+      0.014,
+    );
+    panel(
+      'Shoulder inset enamel',
+      [
+        [1578, 347],
+        [1589, 338],
+        [1627, 381],
+        [1626, 444],
+        [1574, 393],
+      ],
+      0.283,
+      deepRed,
+      0.014,
+    );
+    seam('Armor perimeter channel', [1667, 378], [1655, 459], 0.199);
+    seam('Armor perimeter channel', [1652, 468], [1630, 633], 0.199);
+    seam('Armor lower perimeter', [1602, 707], [1610, 725], 0.199);
+    // Black cooling slots in the reverse spine; no glowing sci-fi inserts.
+    for (let i = 0; i < 6; i++) {
+      const u = 1732 - i * 4.5,
+        v = 469 + i * 24;
+      for (const sign of [-1, 1]) {
+        const slot = box(
+          'Blade spine cooling slot',
+          u,
+          v,
+          12,
+          3.2,
+          0.014,
+          recess,
+          sign * 0.09,
+        );
+        slot.rotation.z = -0.12;
+      }
+    }
+    for (const [u, v] of [
+      [1590, 350],
+      [1619, 388],
+      [1624, 450],
+    ] as P[]) {
+      const first = active.children.length;
+      bolt(u, v, 0.299, 1.8);
+      active.children.slice(first).forEach((m) => {
+        m.name = 'Shoulder ' + m.name;
+      });
+    }
+    // A narrow rail is exposed inside each assembly, continuing through its hinge.
+    for (const sign of [-1, 1]) {
+      tube(
+        'Upper blade guide rail',
+        [1650, 468],
+        [1629, 618],
+        2,
+        gunmetal,
+        sign * 0.127,
+      );
+      tube(
+        'Lower arm guide rail',
+        [1601, 772],
+        [1524, 861],
+        1.7,
+        gunmetal,
+        sign * 0.112,
+      );
+    }
+    active = groups.counterblade;
+    panel(
+      'Counterblade inset frame',
+      [
+        [1649, 154],
+        [1720, 170],
+        [1720, 199],
+        [1650, 184],
+      ],
+      0.199,
+      deepRed,
+      0.016,
+    );
+    seam('Counterblade panel seam', [1661, 159], [1710, 170], 0.215);
+    for (let i = 0; i < 7; i++)
+      seam(
+        'Counterblade panel ribs',
+        [1660 + i * 7, 161 + i * 1.55],
+        [1660 + i * 7, 182 + i * 1.55],
+        0.216,
+      );
+    ring(
+      'Counterblade machined bearing race',
+      1631,
+      193,
+      16,
+      14,
+      0.24,
+      gunmetal,
+    );
+    active = groups.shaft;
+    for (const u of [1400, 1450, 1570, 1635]) {
+      tube(
+        'Upper black rifle barrel collar',
+        [u - 3, 353],
+        [u + 3, 353],
+        13.3,
+        gunmetal,
+      );
+    }
+    for (const sign of [-1, 1]) {
+      tube(
+        'Fore-end polished guide',
+        [1218, 345],
+        [1366, 345],
+        2,
+        steel,
+        sign * 0.151,
+      );
+      for (let i = 0; i < 9; i++)
+        box(
+          'Fore-end rail tooth',
+          1260 + i * 10,
+          334,
+          6,
+          6,
+          0.027,
+          black,
+          sign * 0.155,
+        );
+    }
+    active = groups.receiver;
+    panel(
+      'Receiver inset seam',
+      [
+        [883, 344],
+        [965, 344],
+        [965, 355],
+        [1008, 355],
+        [1012, 365],
+        [886, 365],
+      ],
+      0.24,
+      deepRed,
+      0.018,
+    );
+    for (let i = 0; i < 7; i++) {
+      for (const sign of [-1, 1])
+        box(
+          'Receiver grip flute',
+          895 + i * 8,
+          356,
+          2.2,
+          14,
+          0.01,
+          recess,
+          sign * 0.256,
+        );
+    }
+    for (let i = 0; i < 5; i++) {
+      for (const sign of [-1, 1])
+        box(
+          'Chamber cooling flute',
+          1116 + i * 8,
+          343,
+          2,
+          12,
+          0.008,
+          recess,
+          sign * 0.237,
+        );
+    }
+    for (const sign of [-1, 1]) {
+      tube(
+        'Bolt action guide rod',
+        [993, 342],
+        [1101, 342],
+        2.2,
+        steel,
+        sign * 0.265,
+      );
+      box(
+        'Bolt action guide keeper',
+        995,
+        342,
+        5,
+        8,
+        0.09,
+        black,
+        sign * 0.265,
+      );
+    }
+    // Rounded optic collars, concentric glass and a small knurled adjustment cap.
+    for (const u of [887, 894, 936, 943])
+      tube('Optic collar', [u, 317], [u + 2.3, 317], 10.7, gunmetal);
+    tube('Optic rear glass', [883, 317], [884, 317], 7, lens);
+    for (let i = 0; i < 8; i++)
+      box('Scope mount serration', 914, 315 + i * 2.4, 10, 0.8, 0.178, black);
+    ring('Optic side adjustment rim', 919, 317, 5, 3, 0.105, gunmetal);
+    for (let i = 0; i < 9; i++) {
+      for (const sign of [-1, 1])
+        box(
+          'Magazine edge rib',
+          1082,
+          390 + i * 4,
+          4,
+          1.4,
+          0.019,
+          black,
+          sign * 0.226,
+        );
+    }
+    seam('Magazine inset border', [1011, 391], [1011, 411], 0.224);
+    seam('Magazine inset border', [1011, 411], [1075, 423], 0.224);
+    // Ruby's rose motif, engraved as overlapping curved petals on the magazine.
+    for (const sign of [-1, 1]) {
+      for (let i = 0; i < 7; i++) {
+        const a = (i * Math.PI * 2) / 7;
+        const pts = [];
+        for (let j = 0; j <= 20; j++) {
+          const t = (j / 20) * Math.PI * 1.6;
+          const r = 5.5 + 2.5 * Math.sin(t / 1.6);
+          const u = 1041 + 5 * Math.cos(a) + r * Math.cos(t + a);
+          const v = 404 + 5 * Math.sin(a) + r * Math.sin(t + a);
+          const p = point(u, v);
+          pts.push(new THREE.Vector3(p.x, p.y, sign * 0.232));
+        }
+        mesh(
+          new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3(pts),
+            20,
+            0.004,
+            5,
+            false,
+          ),
+          deepRed,
+          'Rose magazine engraving',
+        );
+      }
+    }
+    for (let i = 0; i < 6; i++)
+      seam(
+        'Grip stipple groove',
+        [865, 386 + i * 4],
+        [878, 387 + i * 4],
+        0.137,
+      );
+    active = groups.pommel;
+    panel(
+      'Stock shoulder enamel',
+      [
+        [444, 347],
+        [494, 347],
+        [503, 353],
+        [550, 353],
+        [550, 373],
+        [504, 373],
+        [494, 377],
+        [444, 377],
+      ],
+      0.138,
+      red,
+      0.036,
+    );
+    panel(
+      'Stock shoulder rubber pad',
+      [
+        [443, 349],
+        [453, 349],
+        [453, 375],
+        [443, 375],
+      ],
+      0.166,
+      grip,
+      0.022,
+    );
+    for (let i = 0; i < 7; i++)
+      seam('Stock pad grooves', [445, 352 + i * 3], [451, 352 + i * 3], 0.18);
+    for (const u of [462, 485, 521, 542]) bolt(u, 362, 0.172, 1.7);
+  }
   const rig = createCrescentRig(root, groups);
   root.rotation.z = -0.18;
   root.updateMatrixWorld(true);

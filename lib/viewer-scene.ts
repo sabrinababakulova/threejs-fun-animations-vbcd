@@ -5,7 +5,11 @@ import {
   type WeaponForm,
 } from './transformation-playback';
 import { TRANSFORM_DURATION, smoothStage } from './crescent-rig';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createStudioEnvironment } from './studio-environment';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import {
   createCrescentRose,
   type PartName,
@@ -15,15 +19,15 @@ import {
 export type CameraView = 'hero' | 'front' | 'back' | 'side';
 export function createViewerScene(host: HTMLElement, onInteract: () => void) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#1b1f25');
-  scene.fog = new THREE.Fog('#1b1f25', 40, 90);
+  scene.background = new THREE.Color('#101218');
+  scene.fog = new THREE.Fog('#101218', 32, 75);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.tabIndex = 0;
   renderer.domElement.setAttribute(
     'aria-label',
@@ -59,15 +63,11 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       }),
     );
   };
-  const room = new RoomEnvironment();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const env = pmrem.fromScene(room, 0.04);
+  const env = createStudioEnvironment(renderer);
   scene.environment = env.texture;
-  scene.environmentIntensity = 0.7;
-  room.dispose();
-  pmrem.dispose();
-  scene.add(new THREE.HemisphereLight('#dce5f3', '#43414a', 1.55));
-  const key = new THREE.DirectionalLight('#fff3ea', 3.2);
+  scene.environmentIntensity = 0.95;
+  scene.add(new THREE.HemisphereLight('#dce5f3', '#25212a', 0.65));
+  const key = new THREE.DirectionalLight('#fff3ea', 3.4);
   key.position.set(-5, 9, 9);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -82,19 +82,19 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
   key.shadow.normalBias = 0.025;
   key.shadow.bias = -0.0002;
   scene.add(key);
-  const fill = new THREE.DirectionalLight('#d7e6ff', 1.6);
+  const fill = new THREE.DirectionalLight('#d7e6ff', 1.25);
   fill.position.set(5, 2, -6);
   scene.add(fill);
-  const rim = new THREE.DirectionalLight('#ffffff', 2.2);
+  const rim = new THREE.DirectionalLight('#e0eaff', 3.0);
   rim.position.set(-4, 7, -4);
   scene.add(rim);
   const floorY = model.bounds.min.y - 0.55;
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(150, 150),
     new THREE.MeshStandardMaterial({
-      color: '#20252c',
-      metalness: 0.1,
-      roughness: 0.95,
+      color: '#16191e',
+      metalness: 0.15,
+      roughness: 0.7,
     }),
   );
   floor.rotation.x = -Math.PI / 2;
@@ -105,7 +105,27 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
   grid.position.y = floorY + 0.012;
   grid.material.transparent = true;
   grid.material.opacity = 0.26;
+  grid.visible = false;
   scene.add(grid);
+  const targetBuffer = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    samples: 4,
+  });
+  const composer = new EffectComposer(renderer, targetBuffer);
+  const beautyPass = new RenderPass(scene, camera);
+  const contactPass = new GTAOPass(scene, camera, 1, 1);
+  contactPass.blendIntensity = 0.65;
+  contactPass.updateGtaoMaterial({
+    radius: 0.26,
+    thickness: 0.75,
+    distanceFallOff: 0.7,
+    samples: 8,
+  });
+  contactPass.updatePdMaterial({ samples: 8, radius: 4 });
+  const outputPass = new OutputPass();
+  composer.addPass(beautyPass);
+  composer.addPass(contactPass);
+  composer.addPass(outputPass);
   const reducedMotion = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
   ).matches;
@@ -126,7 +146,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
         ? new THREE.Vector3(0, 0, -1)
         : v === 'side'
           ? new THREE.Vector3(1, 0.01, 0.04)
-          : new THREE.Vector3(0.19, 0.07, 1).normalize();
+          : new THREE.Vector3(0.48, 0.15, 1).normalize();
   const distanceToFit = (bounds: THREE.Box3) => {
     const size = bounds.getSize(new THREE.Vector3());
     const fov = THREE.MathUtils.degToRad(camera.fov) / 2;
@@ -181,6 +201,9 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     const { width, height } = host.getBoundingClientRect();
     if (!width || !height) return;
     renderer.setSize(width, height);
+    composer.setSize(width, height);
+    // Contact shading needs less resolution than the anti-aliased beauty pass.
+    contactPass.setSize(Math.ceil(width), Math.ceil(height));
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     if (!manual && !automaticFraming) setView(view, false);
@@ -233,7 +256,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       const destination = target
         .clone()
         .add(direction(view).multiplyScalar(dist));
-      const damping = 1 - Math.exp(-7 * delta);
+      const damping = 1 - Math.exp(-14 * delta);
       camera.position.lerp(destination, damping);
       controls.target.lerp(target, damping);
       if (
@@ -250,7 +273,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       if (t === 1) transition = null;
     }
     controls.update(delta);
-    renderer.render(scene, camera);
+    composer.render();
   };
   renderer.setAnimationLoop(render);
   const visibility = () => {
@@ -292,7 +315,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     },
     transformTo(form: WeaponForm) {
       prepareMechanism();
-      leadIn = reassembly ? 0.45 : 0.35;
+      leadIn = reassembly ? 0.45 : 0;
       playback.playTo(form);
       if (reducedMotion) {
         reassembly = null;
@@ -336,7 +359,8 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     },
     setFinish(finish: Finish) {
       model.setFinish(finish);
-      scene.environmentIntensity = finish === 'original' ? 0.22 : 0.7;
+      scene.environmentIntensity = finish === 'original' ? 0.22 : 0.95;
+      contactPass.enabled = finish === 'studio';
     },
     setGrid(value: boolean) {
       grid.visible = value;
@@ -376,7 +400,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       controls.update();
     },
     screenshot() {
-      renderer.render(scene, camera);
+      composer.render();
       renderer.domElement.toBlob((blob) => {
         if (blob) download(blob, 'crescent-rose.png');
       }, 'image/png');
@@ -434,6 +458,10 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       grid.geometry.dispose();
       grid.material.dispose();
       key.shadow.dispose();
+      composer.dispose();
+      beautyPass.dispose();
+      contactPass.dispose();
+      outputPass.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },

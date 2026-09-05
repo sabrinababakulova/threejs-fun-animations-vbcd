@@ -59,7 +59,7 @@ const parts: { id: PartName; name: string; description: string }[] = [
     id: 'pommel',
     name: 'Bladed pommel',
     description:
-      'The narrow black-and-red shaft ends in a split silver-edged spike, held by a small circular pivot.',
+      'The silver-edged spike folds into a shoulder stock. Its tip nests against the red casing before the stock swings down.',
   },
 ];
 export default function CrescentViewer() {
@@ -70,7 +70,7 @@ export default function CrescentViewer() {
   const [finish, setFinish] = useState<Finish>('studio'),
     [view, setView] = useState<CameraView | null>('hero');
   const [rotate, setRotate] = useState(false),
-    [grid, setGrid] = useState(true),
+    [grid, setGrid] = useState(false),
     [explode, setExplode] = useState(0);
   const [part, setPart] = useState<PartName | null>(null),
     [exporting, setExporting] = useState(false);
@@ -170,9 +170,10 @@ export default function CrescentViewer() {
     if (
       values.speed !== undefined &&
       values.speed !== 0.5 &&
-      values.speed !== 1
+      values.speed !== 1 &&
+      values.speed !== 2
     )
-      throw new Error('Speed must be 0.5 or 1.');
+      throw new Error('Speed must be 0.5, 1, or 2.');
     if (!api.current) throw new Error('The model is still loading.');
     if (mechanismBusy)
       throw new Error('Wait for the current motion to finish or pause it.');
@@ -251,7 +252,7 @@ export default function CrescentViewer() {
               type: 'object',
               properties: {
                 form: { type: 'string', enum: ['scythe', 'rifle'] },
-                speed: { type: 'number', enum: [0.5, 1] },
+                speed: { type: 'number', enum: [0.5, 1, 2] },
               },
               required: ['form'],
               additionalProperties: false,
@@ -612,19 +613,23 @@ export default function CrescentViewer() {
                         : 'To scythe'}
                 </span>
               </button>
-              <button
-                className="speed-button"
-                disabled={!ready}
-                aria-pressed={mechanism.speed === 0.5}
-                onClick={() =>
-                  api.current?.setTransformationSpeed(
-                    mechanism.speed === 0.5 ? 1 : 0.5,
-                  )
-                }
-                title="Toggle slow motion"
-              >
-                {mechanism.speed === 0.5 ? '0.5×' : '1×'} <span>speed</span>
-              </button>
+              <label className="speed-control">
+                <span>Speed</span>
+                <select
+                  aria-label="Transformation speed"
+                  value={mechanism.speed}
+                  disabled={!ready}
+                  onChange={(event) =>
+                    api.current?.setTransformationSpeed(
+                      Number(event.target.value),
+                    )
+                  }
+                >
+                  <option value={0.5}>0.5× · 4s</option>
+                  <option value={1}>1× · 2s</option>
+                  <option value={2}>2× · 1s</option>
+                </select>
+              </label>
             </div>
             <button
               className="bolt-button"
@@ -784,6 +789,14 @@ export default function CrescentViewer() {
                 >
                   production render and RWBY references{' '}
                   <ArrowUpRight size={12} />
+                </a>{' '}
+                and{' '}
+                <a
+                  href="https://carolineeden.net/projects/8b9DAm"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Caroline Eden’s study of both forms <ArrowUpRight size={12} />
                 </a>
                 . Proportions are estimated from images. This study depicts the
                 scythe and rifle forms with a reference-inspired folding

@@ -6,14 +6,14 @@ import { smoothStage, TRANSFORM_DURATION } from '../lib/crescent-rig.ts';
 
 const playback = createTransformationPlayback(TRANSFORM_DURATION);
 playback.playTo('rifle');
-playback.tick(1.3);
+playback.tick(TRANSFORM_DURATION * 0.25);
 assert(Math.abs(playback.getState().progress - 0.25) < 1e-10);
 playback.togglePause();
 const paused = playback.getState().progress;
 playback.tick(10);
 assert.equal(playback.getState().progress, paused);
 playback.togglePause();
-playback.tick(3.9);
+playback.tick(TRANSFORM_DURATION * 0.75);
 assert.equal(playback.getState().progress, 1);
 playback.playTo('scythe');
 playback.tick(TRANSFORM_DURATION);
@@ -31,14 +31,19 @@ assert.equal(playback.getState().progress, 0.35);
 for (const fps of [30, 60, 144]) {
   const clock = createTransformationPlayback(TRANSFORM_DURATION);
   clock.playTo('rifle');
-  for (let i = 0; i < fps * 2; i++) clock.tick(1 / fps);
+  for (let i = 0; i < fps; i++) clock.tick(1 / fps);
   assert(
-    Math.abs(clock.getState().progress - 2 / TRANSFORM_DURATION) < 1e-10,
+    Math.abs(clock.getState().progress - 1 / TRANSFORM_DURATION) < 1e-10,
     `Timing changed at ${fps} FPS`,
   );
   clock.tick(10);
   assert.equal(clock.getState().progress, 1);
 }
+const fast = createTransformationPlayback(TRANSFORM_DURATION);
+fast.setSpeed(2);
+fast.playTo('rifle');
+fast.tick(1);
+assert.equal(fast.getState().progress, 1, '2× should complete in one second');
 // Quintic easing has zero endpoint velocity and acceleration.
 for (const end of [0, 1]) {
   const epsilon = 1e-4;
@@ -54,12 +59,34 @@ model.root.traverse((node) => {
     geometries.set(node, node.geometry.getAttribute('position').array.slice());
 });
 const hingeBases = new Map(
-  ['mainFold', 'lowerFold', 'tipFold', 'counterFold', 'counterTip'].map(
-    (name) => [name, model.rig[name].position.clone()],
-  ),
+  [
+    'mainFold',
+    'lowerFold',
+    'tipFold',
+    'counterFold',
+    'counterTip',
+    'stockFold',
+    'stockTip',
+  ].map((name) => [name, model.rig[name].position.clone()]),
 );
 for (let i = 0; i <= 200; i++) {
   model.setTransformation(i / 200);
+  const shoulderShell = new THREE.Box3()
+    .setFromObject(
+      model.root.getObjectByName('Shoulder red shell / front'),
+      true,
+    )
+    .getCenter(new THREE.Vector3());
+  const shoulderInset = new THREE.Box3()
+    .setFromObject(
+      model.root.getObjectByName('Shoulder inset enamel / front'),
+      true,
+    )
+    .getCenter(new THREE.Vector3());
+  assert(
+    shoulderShell.distanceTo(shoulderInset) < 0.25,
+    'Shoulder detailing separated from its armor',
+  );
   model.root.traverse((node) => {
     assert(
       node.matrixWorld.elements.every(Number.isFinite),
@@ -89,6 +116,20 @@ assert(
   rifleSize.x < model.bounds.getSize(new THREE.Vector3()).y * 0.7,
   'Shaft did not retract',
 );
+const muzzle = new THREE.Box3()
+  .setFromObject(model.root.getObjectByName('Head muzzle bore'))
+  .getCenter(new THREE.Vector3());
+const stock = new THREE.Box3()
+  .setFromObject(model.rig.stockFold)
+  .getCenter(new THREE.Vector3());
+const receiver = new THREE.Box3()
+  .setFromObject(model.groups.receiver)
+  .getCenter(new THREE.Vector3());
+assert(
+  muzzle.x < receiver.x && receiver.x < stock.x,
+  'Rifle muzzle and stock must be at opposite ends of the receiver',
+);
+assert(stock.y < -0.2, 'Shoulder stock did not swing down');
 model.setBoltProgress(0.5);
 const openBolt = model.rig.boltSlide.position.y;
 assert(openBolt > 0.25);

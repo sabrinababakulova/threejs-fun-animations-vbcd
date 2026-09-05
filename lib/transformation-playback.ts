@@ -16,7 +16,7 @@ export const transformationPhase = (progress: number) =>
 
 /** A deterministic, frame-rate-independent timeline. Poses are sampled from a
  * single normalized value so seeking and reversing never accumulate drift. */
-export function createTransformationPlayback(duration = 5.2) {
+export function createTransformationPlayback(duration = 2.0) {
   let progress = 0,
     target = 1,
     playing = false,

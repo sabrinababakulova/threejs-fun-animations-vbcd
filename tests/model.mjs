@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { TRANSFORM_DURATION } from '../lib/crescent-rig.ts';
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -86,7 +87,7 @@ const action = mixer.clipAction(imported.animations[0]);
 action.setLoop(THREE.LoopOnce, 1);
 action.clampWhenFinished = true;
 action.play();
-mixer.setTime(2.6);
+mixer.setTime(TRANSFORM_DURATION / 2);
 model.setTransformation(0.5);
 const importedMid = new THREE.Box3().setFromObject(imported.scene),
   expectedMid = new THREE.Box3().setFromObject(model.root);
@@ -98,7 +99,7 @@ assert(
   importedMid.max.distanceTo(expectedMid.max) < 0.003,
   'Export changed an intermediate animation pose',
 );
-mixer.setTime(5.2);
+mixer.setTime(TRANSFORM_DURATION);
 model.setTransformation(1);
 const importedEnd = new THREE.Box3().setFromObject(imported.scene),
   expectedEnd = new THREE.Box3().setFromObject(model.root);

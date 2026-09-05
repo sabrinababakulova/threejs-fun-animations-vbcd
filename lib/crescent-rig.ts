@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { PartName } from './crescent-rose';
 
-export const TRANSFORM_DURATION = 5.2;
+export const TRANSFORM_DURATION = 2.0;
 export const smoothStage = (p: number, start: number, end: number) => {
   const t = THREE.MathUtils.clamp((p - start) / (end - start), 0, 1);
   return t * t * t * (t * (t * 6 - 15) + 10);
@@ -45,8 +45,9 @@ export function createCrescentRig(
   const bladeMeshes = [...groups.blade.children];
   const fixedNames = [
     'Angular shoulder bracket',
-    'Shoulder red shell',
+    'Shoulder ',
     'Head breech block',
+    'Head muzzle',
     'Breech cap',
     'Main folding pivot',
   ];
@@ -102,6 +103,20 @@ export function createCrescentRig(
       /^(Upper silver|Upper sharpened)/.test(m.name),
     ),
   );
+  const spineSlide = joint(
+    'CR_SpineSlide',
+    mainFold,
+    new THREE.Vector3(),
+    [...mainFold.children].filter((m) =>
+      /^(Swept black blade spine|Blade spine cooling slot)/.test(m.name),
+    ),
+  );
+  const heelSlide = joint(
+    'CR_HeelSlide',
+    mainFold,
+    new THREE.Vector3(),
+    [...mainFold.children].filter((m) => m.name === 'Inner blade heel'),
+  );
   const lowerEdgeSlide = joint(
     'CR_LowerEdgeSlide',
     lowerFold,
@@ -153,6 +168,28 @@ export function createCrescentRig(
     ),
   );
   muzzleSlide.attach(groups.pommel);
+  const stockFold = joint(
+    'CR_StockFold',
+    groups.pommel,
+    profilePoint(555, 363),
+    [...groups.pommel.children],
+  );
+  const stockTip = joint(
+    'CR_StockTip',
+    stockFold,
+    profilePoint(438, 362),
+    [...stockFold.children].filter((m) => m.name.startsWith('Stock tip')),
+  );
+  const stockToeSlide = joint(
+    'CR_StockToeSlide',
+    stockFold,
+    new THREE.Vector3(),
+    [...stockFold.children].filter((m) =>
+      /^(Upper pommel edge|Lower pommel edge|Pommel blade separation)/.test(
+        m.name,
+      ),
+    ),
+  );
   const opticSlide = joint(
     'CR_OpticSlide',
     groups.receiver,
@@ -183,6 +220,11 @@ export function createCrescentRig(
     upperEdgeSlide,
     lowerEdgeSlide,
     counterEdgeSlide,
+    stockFold,
+    stockTip,
+    stockToeSlide,
+    spineSlide,
+    heelSlide,
   };
   const rest = new Map<
     THREE.Object3D,
@@ -212,28 +254,32 @@ export function createCrescentRig(
     const s = (a: number, b: number) => smoothStage(progress, a, b);
     // Small tips close first; the two long blade sections then fold on separate
     // axial layers, leaving space for the silver edges throughout the swing.
+    spineSlide.position.y -= 0.37 * s(0.05, 0.24);
+    heelSlide.position.y += 0.55 * s(0.05, 0.24);
     upperEdgeSlide.position.y += 0.62 * s(0.01, 0.19);
     lowerEdgeSlide.position.y += 0.32 * s(0.02, 0.2);
     lowerEdgeSlide.position.x -= 0.2 * s(0.02, 0.2);
     counterEdgeSlide.position.y += 1.08 * s(0.02, 0.2);
     counterEdgeSlide.position.x += 0.16 * s(0.02, 0.2);
-    tipFold.position.z += 0.16 * s(0.02, 0.12);
-    tipFold.rotation.z = THREE.MathUtils.degToRad(161) * s(0.08, 0.29);
-    lowerFold.position.z -= 0.56 * s(0.05, 0.18);
-    lowerFold.rotation.z = THREE.MathUtils.degToRad(144) * s(0.19, 0.48);
-    counterTip.position.z -= 0.15 * s(0.03, 0.12);
-    counterTip.rotation.z = THREE.MathUtils.degToRad(85) * s(0.09, 0.3);
-    counterFold.position.z -= 0.43 * s(0.12, 0.24);
-    counterFold.rotation.z = THREE.MathUtils.degToRad(-75.5) * s(0.28, 0.52);
-    mainFold.position.z += 0.45 * s(0.26, 0.39);
+    tipFold.position.z += 0.264 * s(0.02, 0.12);
+    tipFold.rotation.z = THREE.MathUtils.degToRad(174) * s(0.08, 0.29);
+    lowerFold.position.z -= 0.924 * s(0.05, 0.18);
+    lowerFold.rotation.z = THREE.MathUtils.degToRad(158) * s(0.19, 0.48);
+    counterTip.position.z -= 0.248 * s(0.03, 0.12);
+    counterTip.rotation.z = THREE.MathUtils.degToRad(79) * s(0.09, 0.3);
+    counterFold.position.z -= 0.71 * s(0.12, 0.24);
+    counterFold.rotation.z = THREE.MathUtils.degToRad(-91) * s(0.28, 0.52);
+    mainFold.position.z += 0.743 * s(0.26, 0.39);
     mainFold.rotation.z = THREE.MathUtils.degToRad(79.2) * s(0.42, 0.7);
     // The head and barrel share a carriage stroke. The bore remains continuous
     // through the receiver; the front segment is sheathed, never shortened.
     headCarriage.position.y -= 2.32 * s(0.66, 0.88);
     barrelSlide.position.y -= 2.32 * s(0.66, 0.88);
-    muzzleSlide.position.y += 2 * s(0.71, 0.92);
-    opticSlide.position.y += 1.65 * s(0.7, 0.94);
-    opticSlide.position.x += 0.2 * s(0.7, 0.94);
+    muzzleSlide.position.y += 1 * s(0.71, 0.92);
+    stockToeSlide.position.y += 0.28 * s(0.06, 0.3);
+    stockTip.position.z += 0.27 * s(0.01, 0.13);
+    stockTip.rotation.z = Math.PI * s(0.08, 0.34);
+    stockFold.rotation.z = (-Math.PI / 2) * s(0.48, 0.78);
     root.rotation.z = THREE.MathUtils.lerp(-0.18, Math.PI / 2, s(0.38, 0.96));
     // A visible straight-pull action: retract, pause open, then return forward.
     const pull =

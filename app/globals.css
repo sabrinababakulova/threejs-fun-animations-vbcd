@@ -152,7 +152,7 @@ button svg {
 .stage {
   position: relative;
   overflow: hidden;
-  background: #1b1f25;
+  background: #101218;
   isolation: isolate;
 }
 .canvas-host {
@@ -180,7 +180,7 @@ button svg {
   z-index: 3;
   pointer-events: none;
   font:
-    11px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   letter-spacing: 0.07em;
 }
@@ -205,7 +205,7 @@ button svg {
   align-items: center;
   gap: 7px;
   font:
-    11px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   color: #9fa8b4;
   letter-spacing: 0.07em;
@@ -226,7 +226,7 @@ button svg {
   line-height: 0.82;
   letter-spacing: 0.02em;
   color: #b0bdcf;
-  opacity: 0.038;
+  opacity: 0.025;
   z-index: 2;
   pointer-events: none;
 }
@@ -312,7 +312,7 @@ button svg {
   justify-content: space-between;
   width: 100%;
   font:
-    10px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   letter-spacing: 0.1em;
   color: #87909d;
@@ -331,7 +331,7 @@ button svg {
 }
 .eyebrow {
   font:
-    10px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   letter-spacing: 0.075em;
   color: #a5adb8;
@@ -348,8 +348,8 @@ button svg {
   color: #cd3648;
 }
 .weapon-heading p {
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.6;
   color: #a7afb9;
   margin: 0 0 18px;
 }
@@ -362,7 +362,7 @@ button svg {
   padding: 4px 6px;
   border: 1px solid #41454e;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: #b4bbc5;
   line-height: 1.25;
 }
@@ -377,7 +377,7 @@ button svg {
   margin-bottom: 16px;
 }
 .section-heading h2 {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 550;
   margin: 0;
   letter-spacing: 0.01em;
@@ -395,7 +395,7 @@ button svg {
   border-radius: 6px;
 }
 .finish-tabs [data-slot='tabs-trigger'] {
-  font-size: 11px;
+  font-size: 12px;
   padding: 0 10px;
   border-radius: 4px;
   color: #99a2ae;
@@ -409,7 +409,7 @@ button svg {
   box-shadow: none;
 }
 .setting-note {
-  font-size: 11px;
+  font-size: 12px;
   color: #929daa;
   margin: 11px 0 0;
   line-height: 1.5;
@@ -454,7 +454,7 @@ button svg {
 }
 .explode-label span {
   font:
-    11px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   color: #939eab;
 }
@@ -544,7 +544,7 @@ button svg {
 }
 .file-type {
   font:
-    10px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   opacity: 0.65;
   margin-left: auto;
@@ -554,7 +554,7 @@ button svg {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: #9ba5b2;
   border: 0;
   background: transparent;
@@ -568,7 +568,7 @@ button svg {
   transform: rotate(90deg);
 }
 .reference-note {
-  font-size: 11px;
+  font-size: 12px;
   color: #9fabba;
   line-height: 1.7;
   margin-top: 15px;
@@ -618,7 +618,7 @@ button svg {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  background: #1b1f25;
+  background: #101218;
   gap: 12px;
   padding: 35px;
   text-align: center;
@@ -744,18 +744,18 @@ button svg {
   }
   .stage-heading {
     left: 20px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .stage-corner {
     right: 18px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .stage-footer {
     padding-left: 16px;
     padding-right: 16px;
   }
   .interaction-hint {
-    font-size: 10px;
+    font-size: 12px;
     gap: 6px;
   }
   .viewer-toolbar {
@@ -795,7 +795,7 @@ button svg {
     padding: 0 8px;
   }
   .reference-link {
-    font-size: 11px;
+    font-size: 12px;
     gap: 4px;
   }
   .workspace {
@@ -916,7 +916,7 @@ button svg {
     padding: 0 10px 15px;
   }
   .interaction-hint {
-    font-size: 10px;
+    font-size: 12px;
     margin-bottom: 13px;
   }
   .interaction-hint .hint-dot:last-of-type,
@@ -928,7 +928,7 @@ button svg {
     gap: 1px;
   }
   .camera-presets button {
-    font-size: 11px;
+    font-size: 12px;
     padding: 0 8px;
   }
   .icon-button {
@@ -986,7 +986,7 @@ button svg {
     align-self: center;
   }
   .weapon-tags span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .finish-tabs[data-slot='tabs-list'] {
     height: 40px;
@@ -1037,7 +1037,7 @@ button svg {
 }
 .transformation-readout > span:last-child {
   font:
-    11px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   color: #96a4b7;
 }
@@ -1074,7 +1074,7 @@ button svg {
 .speed-button span {
   font-family: var(--font-geist-sans), sans-serif;
   color: #939eac;
-  font-size: 11px;
+  font-size: 12px;
 }
 .speed-button[aria-pressed='true'] {
   background: #414c5b;
@@ -1089,7 +1089,7 @@ button svg {
 .bolt-button span {
   margin-left: auto;
   color: #8795a7;
-  font-size: 10px;
+  font-size: 12px;
 }
 .bolt-button:disabled {
   opacity: 0.4;
@@ -1109,4 +1109,26 @@ button svg {
   .settings-section {
     border-top: 1px solid var(--border);
   }
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a9b2bf;
+  font-size: 12px;
+}
+.speed-control select {
+  color: #edf0f2;
+  background: #272d35;
+  border: 1px solid #444c59;
+  border-radius: 5px;
+  font: inherit;
+  min-height: 34px;
+  padding: 0 6px;
+  cursor: pointer;
+}
+.speed-control select:focus-visible {
+  outline: 2px solid #aebdce;
+  outline-offset: 3px;
 }
