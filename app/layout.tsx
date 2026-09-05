@@ -11,7 +11,7 @@ const mono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Crescent Rose · Interactive Weapon Study',
   description:
-    'Explore a Three.js reconstruction of Ruby Rose’s Crescent Rose from RWBY. Orbit, inspect the details, and export the 3D model.',
+    'Explore a Three.js reconstruction of Ruby Rose’s Crescent Rose from RWBY. Transform between scythe and bolt-action sniper rifle, inspect the folding mechanism, and export the animated 3D model.',
 };
 export default function RootLayout({
   children,

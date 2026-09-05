@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  createTransformationPlayback,
+  type WeaponForm,
+} from './transformation-playback';
+import { TRANSFORM_DURATION, smoothStage } from './crescent-rig';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   createCrescentRose,
@@ -18,7 +23,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.tabIndex = 0;
   renderer.domElement.setAttribute(
     'aria-label',
@@ -37,6 +42,23 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
   controls.listenToKeyEvents(renderer.domElement);
   const model = createCrescentRose();
   scene.add(model.root);
+  const playback = createTransformationPlayback(TRANSFORM_DURATION);
+  let automaticFraming = false,
+    leadIn = 0,
+    boltElapsed: number | null = null,
+    lastStateUpdate = 0;
+  let separation = 0,
+    reassembly: { from: number; elapsed: number } | null = null;
+  const publishMechanismState = (force = false) => {
+    const now = performance.now();
+    if (!force && now - lastStateUpdate < 33) return;
+    lastStateUpdate = now;
+    host.dispatchEvent(
+      new CustomEvent('mechanism-state', {
+        detail: { ...playback.getState(), boltActive: boltElapsed !== null },
+      }),
+    );
+  };
   const room = new RoomEnvironment();
   const pmrem = new THREE.PMREMGenerator(renderer);
   const env = pmrem.fromScene(room, 0.04);
@@ -161,13 +183,14 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    if (!manual) setView(view, false);
+    if (!manual && !automaticFraming) setView(view, false);
   };
   const observer = new ResizeObserver(resize);
   observer.observe(host);
   resize();
   const startInteraction = () => {
     manual = true;
+    automaticFraming = false;
     transition = null;
     controls.autoRotate = false;
     onInteract();
@@ -179,6 +202,46 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     const now = performance.now();
     const delta = Math.min((now - previous) / 1000, 0.05);
     previous = now;
+    if (reassembly) {
+      reassembly.elapsed += delta;
+      separation =
+        reassembly.from * (1 - smoothStage(reassembly.elapsed, 0, 0.45));
+      model.setExplode(separation);
+      if (reassembly.elapsed >= 0.45) {
+        separation = 0;
+        reassembly = null;
+      }
+    }
+    if (leadIn > 0) leadIn = Math.max(0, leadIn - delta);
+    else if (playback.tick(delta)) {
+      model.setTransformation(playback.getState().progress);
+      publishMechanismState(!playback.getState().playing);
+    }
+    if (boltElapsed !== null) {
+      boltElapsed += delta;
+      model.setBoltProgress(Math.min(boltElapsed / 1.6, 1));
+      if (boltElapsed >= 1.6) {
+        boltElapsed = null;
+        model.setBoltProgress(0);
+        publishMechanismState(true);
+      }
+    }
+    if (automaticFraming) {
+      const bounds = new THREE.Box3().setFromObject(model.root),
+        target = bounds.getCenter(new THREE.Vector3());
+      const dist = Math.max(distanceToFit(bounds) * 1.06, 7);
+      const destination = target
+        .clone()
+        .add(direction(view).multiplyScalar(dist));
+      const damping = 1 - Math.exp(-7 * delta);
+      camera.position.lerp(destination, damping);
+      controls.target.lerp(target, damping);
+      if (
+        !playback.getState().playing &&
+        camera.position.distanceTo(destination) < 0.002
+      )
+        automaticFraming = false;
+    }
     if (transition) {
       const t = Math.min((now - transition.start) / 650, 1);
       const e = 1 - Math.pow(1 - t, 3);
@@ -212,8 +275,65 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const prepareMechanism = () => {
+    controls.autoRotate = false;
+    if (separation > 0) reassembly = { from: separation, elapsed: 0 };
+    model.setBoltProgress(0);
+    boltElapsed = null;
+    transition = null;
+    automaticFraming = true;
+    manual = false;
+    view = 'hero';
+  };
   return {
-    setView,
+    setView(v: CameraView, animate = true) {
+      automaticFraming = false;
+      setView(v, animate);
+    },
+    transformTo(form: WeaponForm) {
+      prepareMechanism();
+      leadIn = reassembly ? 0.45 : 0.35;
+      playback.playTo(form);
+      if (reducedMotion) {
+        reassembly = null;
+        separation = 0;
+        model.setExplode(0);
+        playback.seek(form === 'rifle' ? 1 : 0);
+        model.setTransformation(playback.getState().progress);
+        setView('hero', false);
+        automaticFraming = false;
+      }
+      publishMechanismState(true);
+    },
+    toggleTransformation() {
+      if (!playback.getState().playing) {
+        prepareMechanism();
+        leadIn = reassembly ? 0.45 : 0;
+      }
+      playback.togglePause();
+      publishMechanismState(true);
+    },
+    seekTransformation(value: number) {
+      prepareMechanism();
+      leadIn = 0;
+      playback.seek(value);
+      model.setTransformation(playback.getState().progress);
+      publishMechanismState(true);
+    },
+    setTransformationSpeed(speed: number) {
+      playback.setSpeed(speed);
+      publishMechanismState(true);
+    },
+    cycleBolt() {
+      if (
+        playback.getState().progress !== 1 ||
+        playback.getState().playing ||
+        boltElapsed !== null
+      )
+        return;
+      boltElapsed = 0;
+      publishMechanismState(true);
+    },
     setFinish(finish: Finish) {
       model.setFinish(finish);
       scene.environmentIntensity = finish === 'original' ? 0.22 : 0.7;
@@ -222,12 +342,16 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       grid.visible = value;
     },
     setAutoRotate(value: boolean) {
+      automaticFraming = false;
       controls.autoRotate = value;
     },
     setExplode(value: number) {
+      reassembly = null;
+      separation = value;
       model.setExplode(value);
     },
     focusPart(part: PartName, animate = true) {
+      automaticFraming = false;
       manual = true;
       controls.autoRotate = false;
       model.root.updateMatrixWorld(true);
@@ -241,6 +365,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
       );
     },
     zoom(factor: number) {
+      automaticFraming = false;
       manual = true;
       transition = null;
       camera.position
@@ -261,15 +386,20 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
         await import('three/addons/exporters/GLTFExporter.js');
       // Export the clean assembled asset regardless of inspection settings.
       const cleanModel = createCrescentRose();
+      const clip = cleanModel.createAnimationClip();
+      cleanModel.setTransformation(playback.getState().progress);
       try {
         const result = await new GLTFExporter().parseAsync(cleanModel.root, {
           binary: true,
+          animations: [clip],
         });
         if (!(result instanceof ArrayBuffer))
           throw new Error('The model could not be exported.');
         download(
           new Blob([result], { type: 'model/gltf-binary' }),
-          'crescent-rose.glb',
+          playback.getState().progress === 1
+            ? 'crescent-rose-rifle.glb'
+            : 'crescent-rose.glb',
         );
       } finally {
         cleanModel.dispose();
@@ -277,6 +407,7 @@ export function createViewerScene(host: HTMLElement, onInteract: () => void) {
     },
     getState() {
       return {
+        mechanism: { ...playback.getState(), boltActive: boltElapsed !== null },
         view: manual ? 'custom' : view,
         autoRotate: controls.autoRotate,
         meshCount: (() => {

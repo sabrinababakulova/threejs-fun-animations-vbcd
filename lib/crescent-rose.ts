@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createCrescentRig } from './crescent-rig.ts';
 
 // Profile coordinates follow the original Crescent Rose production render:
 // https://rwby.fandom.com/wiki/Crescent_Rose/Image_Gallery
@@ -267,32 +268,56 @@ export function createCrescentRose() {
     black,
   );
   plate(
-    'Continuous silver cutting face',
+    'Upper silver cutting face',
     [
       ['M', 1578, 486],
       ['L', 1643, 493],
       ['L', 1632, 618],
       ['L', 1601, 715],
+      ['L', 1545, 700],
+      ['Q', 1575, 616, 1578, 516],
+    ],
+    0.072,
+    steel,
+  );
+  plate(
+    'Lower silver cutting face',
+    [
+      ['M', 1545, 700],
+      ['L', 1601, 715],
       ['Q', 1550, 808, 1480, 879],
       ['L', 1457, 843],
       ['L', 1503, 764],
-      ['Q', 1575, 684, 1578, 516],
+      ['Q', 1528, 735, 1545, 700],
     ],
     0.072,
     steel,
   );
   panel(
-    'Sharpened inner bevel',
+    'Upper sharpened inner bevel',
     [
       ['M', 1578, 516],
       ['L', 1585, 518],
-      ['Q', 1580, 681, 1510, 767],
+      ['Q', 1580, 632, 1550, 702],
+      ['L', 1545, 700],
+      ['Q', 1575, 616, 1578, 516],
+    ],
+    0.045,
+    edge,
+    0.014,
+  );
+  panel(
+    'Lower sharpened inner bevel',
+    [
+      ['M', 1545, 700],
+      ['L', 1550, 702],
+      ['Q', 1534, 740, 1510, 767],
       ['L', 1463, 844],
       ['L', 1480, 870],
       ['L', 1480, 879],
       ['L', 1457, 843],
       ['L', 1503, 764],
-      ['Q', 1575, 684, 1578, 516],
+      ['Q', 1528, 735, 1545, 700],
     ],
     0.045,
     edge,
@@ -904,28 +929,59 @@ export function createCrescentRose() {
   disk('Butt spike pivot', 555, 363, 6, 0.3, black);
   bolt(555, 363, 0.161, 3.1);
 
+  active = groups.blade;
+  disk('Lower folding hinge axle', 1624, 742, 7, 1.8, gunmetal, 0);
+  disk('Lower folding hinge cap', 1624, 742, 11, 0.08, deepRed, 0.84);
+  disk('Main telescoping hinge axle', 1684, 403, 8, 1.08, gunmetal, 0.15);
+  active = groups.counterblade;
+  disk('Counter folding hinge axle', 1674, 359, 7, 0.95, gunmetal, -0.22);
+  disk('Counter folding hinge cap', 1674, 359, 10, 0.06, deepRed, -0.7);
+  active = groups.receiver;
+  plate(
+    'Folding trigger grip',
+    [
+      [865, 367],
+      [886, 369],
+      [884, 418],
+      [872, 429],
+      [857, 421],
+    ],
+    0.19,
+    black,
+  );
+  panel(
+    'Grip inset',
+    [
+      [868, 380],
+      [880, 381],
+      [878, 414],
+      [872, 419],
+      [864, 414],
+    ],
+    0.12,
+    grip,
+    0.018,
+  );
+  // A bore visible behind the pronged muzzle; the whole segment retracts together.
+  active = groups.pommel;
+  tube('Muzzle bore surround', [436, 362], [447, 362], 8, gunmetal);
+  tube('Muzzle dark bore', [435, 362], [436, 362], 5, recess);
+  const rig = createCrescentRig(root, groups);
   root.rotation.z = -0.18;
   root.updateMatrixWorld(true);
   const rest = new THREE.Box3().setFromObject(root);
   const center = rest.getCenter(new THREE.Vector3());
-  const explodeDirections: Record<PartName, THREE.Vector3> = {
-    blade: new THREE.Vector3(-1.1, 0.7, 0.3),
-    counterblade: new THREE.Vector3(0.7, 1.4, -0.2),
-    receiver: new THREE.Vector3(0.5, 0, 1.2),
-    shaft: new THREE.Vector3(0, -0.6, -0.6),
-    pommel: new THREE.Vector3(0, -1.4, 0.1),
-  };
   return {
     root,
     groups,
     center,
     bounds: rest,
-    setExplode(amount: number) {
-      for (const name of Object.keys(groups) as PartName[])
-        groups[name].position
-          .copy(explodeDirections[name])
-          .multiplyScalar(amount);
-    },
+    rig: rig.joints,
+    setTransformation: rig.setTransformation,
+    setBoltProgress: rig.setBoltProgress,
+    getTransformation: rig.getProgress,
+    createAnimationClip: rig.createAnimationClip,
+    setExplode: rig.setExplode,
     setFinish(finish: Finish) {
       materials.forEach((m, i) => {
         m.color.copy(originals[i].color);

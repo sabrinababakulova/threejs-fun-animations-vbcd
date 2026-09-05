@@ -52,8 +52,10 @@ assert(
 );
 for (const finish of ['wireframe', 'original', 'studio'])
   model.setFinish(finish);
+const clip = model.createAnimationClip();
 const result = await new GLTFExporter().parseAsync(model.root, {
   binary: true,
+  animations: [clip],
 });
 assert(result instanceof ArrayBuffer);
 const header = new DataView(result);
@@ -74,6 +76,41 @@ assert(
   importedBounds.max.distanceTo(model.bounds.max) < 0.001,
   'Export changed the maximum bounds',
 );
+assert.equal(
+  imported.animations.length,
+  1,
+  'Export lost the transformation clip',
+);
+const mixer = new THREE.AnimationMixer(imported.scene);
+const action = mixer.clipAction(imported.animations[0]);
+action.setLoop(THREE.LoopOnce, 1);
+action.clampWhenFinished = true;
+action.play();
+mixer.setTime(2.6);
+model.setTransformation(0.5);
+const importedMid = new THREE.Box3().setFromObject(imported.scene),
+  expectedMid = new THREE.Box3().setFromObject(model.root);
+assert(
+  importedMid.min.distanceTo(expectedMid.min) < 0.003,
+  'Export changed an intermediate animation pose',
+);
+assert(
+  importedMid.max.distanceTo(expectedMid.max) < 0.003,
+  'Export changed an intermediate animation pose',
+);
+mixer.setTime(5.2);
+model.setTransformation(1);
+const importedEnd = new THREE.Box3().setFromObject(imported.scene),
+  expectedEnd = new THREE.Box3().setFromObject(model.root);
+assert(
+  importedEnd.min.distanceTo(expectedEnd.min) < 0.003,
+  'Export changed rifle bounds',
+);
+assert(
+  importedEnd.max.distanceTo(expectedEnd.max) < 0.003,
+  'Export changed rifle bounds',
+);
+model.setTransformation(0);
 fs.mkdirSync('outputs', { recursive: true });
 fs.writeFileSync('outputs/crescent-rose.glb', Buffer.from(result));
 console.log(

@@ -2,6 +2,9 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  Play,
+  Pause,
+  Repeat2,
   ArrowDownToLine,
   ArrowUpRight,
   Box,
@@ -24,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CameraView, ViewerAPI } from '@/lib/viewer-scene';
+import type { WeaponForm } from '@/lib/transformation-playback';
 import type { Finish, PartName } from '@/lib/crescent-rose';
 
 const parts: { id: PartName; name: string; description: string }[] = [
@@ -70,6 +74,16 @@ export default function CrescentViewer() {
     [explode, setExplode] = useState(0);
   const [part, setPart] = useState<PartName | null>(null),
     [exporting, setExporting] = useState(false);
+  const [mechanism, setMechanism] = useState({
+    progress: 0,
+    target: 1,
+    playing: false,
+    speed: 1,
+    phase: 'Scythe locked',
+    form: 'scythe' as WeaponForm,
+    boltActive: false,
+  });
+  const mechanismBusy = mechanism.playing || mechanism.boltActive;
   const [notice, setNotice] = useState(''),
     [reference, setReference] = useState(false);
   useEffect(() => {
@@ -77,6 +91,9 @@ export default function CrescentViewer() {
     const element = host.current!;
     const onError = (event: Event) =>
       setError((event as CustomEvent<string>).detail);
+    const onMechanism = (event: Event) =>
+      setMechanism((event as CustomEvent<typeof mechanism>).detail);
+    element.addEventListener('mechanism-state', onMechanism);
     element.addEventListener('viewer-error', onError);
     import('@/lib/viewer-scene')
       .then(({ createViewerScene }) => {
@@ -101,6 +118,7 @@ export default function CrescentViewer() {
     return () => {
       cancelled = true;
       element.removeEventListener('viewer-error', onError);
+      element.removeEventListener('mechanism-state', onMechanism);
       api.current?.dispose();
       api.current = null;
     };
@@ -123,6 +141,8 @@ export default function CrescentViewer() {
     if (!['studio', 'original', 'wireframe'].includes(surface as string))
       throw new Error('Unknown surface.');
     if (!api.current) throw new Error('The model is still loading.');
+    if (mechanismBusy)
+      throw new Error('Pause the transformation before inspecting a detail.');
     flushSync(() => {
       setFinish(surface as Finish);
       api.current!.setFinish(surface as Finish);
@@ -138,6 +158,38 @@ export default function CrescentViewer() {
       }
     });
     return { part: target, finish: surface, status: 'displayed' };
+  });
+  const startTransformationFromAgent = useEffectEvent((input: unknown) => {
+    if (!input || typeof input !== 'object' || Array.isArray(input))
+      throw new Error('Expected an object.');
+    const values = input as Record<string, unknown>;
+    if (Object.keys(values).some((key) => !['form', 'speed'].includes(key)))
+      throw new Error('Unknown setting.');
+    if (values.form !== 'rifle' && values.form !== 'scythe')
+      throw new Error('Choose scythe or rifle.');
+    if (
+      values.speed !== undefined &&
+      values.speed !== 0.5 &&
+      values.speed !== 1
+    )
+      throw new Error('Speed must be 0.5 or 1.');
+    if (!api.current) throw new Error('The model is still loading.');
+    if (mechanismBusy)
+      throw new Error('Wait for the current motion to finish or pause it.');
+    flushSync(() => {
+      setPart(null);
+      setRotate(false);
+      setExplode(0);
+      setView('hero');
+      if (typeof values.speed === 'number')
+        api.current!.setTransformationSpeed(values.speed);
+      api.current!.transformTo(values.form as WeaponForm);
+    });
+    return {
+      status: 'started',
+      targetForm: values.form,
+      ...api.current.getState().mechanism,
+    };
   });
   useEffect(() => {
     if (!ready) return;
@@ -188,6 +240,60 @@ export default function CrescentViewer() {
       ).catch(() => {
         /* Optional browser capability. */
       });
+      Promise.resolve(
+        context.registerTool(
+          {
+            name: 'start_crescent_rose_transformation',
+            title: 'Transform Crescent Rose',
+            description:
+              'Start the visible staged animation into scythe or sniper rifle form. Returns when motion starts, not when it finishes.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                form: { type: 'string', enum: ['scythe', 'rifle'] },
+                speed: { type: 'number', enum: [0.5, 1] },
+              },
+              required: ['form'],
+              additionalProperties: false,
+            },
+            annotations: { readOnlyHint: false, untrustedContentHint: false },
+            execute: (input) => startTransformationFromAgent(input),
+          },
+          { signal: lifecycle.signal },
+        ),
+      ).catch(() => {
+        /* Optional browser capability. */
+      });
+      Promise.resolve(
+        context.registerTool(
+          {
+            name: 'read_crescent_rose_state',
+            title: 'Read model state',
+            description:
+              'Read the current camera, transformation progress, target, playback state, and bolt state without changing the viewer.',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              additionalProperties: false,
+            },
+            annotations: { readOnlyHint: true, untrustedContentHint: false },
+            execute: (input) => {
+              if (
+                !input ||
+                typeof input !== 'object' ||
+                Array.isArray(input) ||
+                Object.keys(input).length
+              )
+                throw new Error('Expected an empty object.');
+              if (!api.current) throw new Error('The model is still loading.');
+              return api.current.getState();
+            },
+          },
+          { signal: lifecycle.signal },
+        ),
+      ).catch(() => {
+        /* Optional browser capability. */
+      });
     } catch {
       /* Browsers without the proposed API keep the standard controls. */
     }
@@ -217,6 +323,13 @@ export default function CrescentViewer() {
       setExporting(false);
     }
   };
+  const transform = (form: WeaponForm) => {
+    setPart(null);
+    setRotate(false);
+    setExplode(0);
+    setView('hero');
+    api.current?.transformTo(form);
+  };
   const selected = parts.find((p) => p.id === part);
   return (
     <main className="workshop">
@@ -244,9 +357,23 @@ export default function CrescentViewer() {
         <section className="stage" aria-label="3D model viewer">
           <div className="stage-heading">
             <span className="status-dot" />
-            <span>SCYTHE FORM</span>
+            <span>
+              {mechanism.progress === 0
+                ? 'SCYTHE FORM'
+                : mechanism.progress === 1
+                  ? 'SNIPER RIFLE'
+                  : 'TRANSFORMATION'}
+            </span>
             <span className="stage-separator">/</span>
-            <span className="subtle">FULLY EXTENDED</span>
+            <span className="subtle">
+              {mechanism.progress === 0
+                ? 'FULLY EXTENDED'
+                : mechanism.progress === 1
+                  ? 'BOLT-ACTION'
+                  : mechanism.playing
+                    ? 'IN MOTION'
+                    : 'PAUSED'}
+            </span>
           </div>
           <div className="stage-corner">
             <span className="live-indicator" />
@@ -400,10 +527,115 @@ export default function CrescentViewer() {
             </p>
             <div className="weapon-tags">
               <span>RWBY</span>
-              <span>Scythe form</span>
+              <span>
+                {mechanism.progress === 0
+                  ? 'Scythe form'
+                  : mechanism.progress === 1
+                    ? 'Rifle form'
+                    : 'Transforming'}
+              </span>
               <span>Fan reconstruction</span>
             </div>
           </div>
+          <section
+            className="settings-section transformation-section"
+            aria-label="Weapon transformation"
+          >
+            <div className="section-heading">
+              <h2>Weapon form</h2>
+              <Repeat2 size={16} />
+            </div>
+            <Tabs
+              value={
+                mechanism.progress === 0
+                  ? 'scythe'
+                  : mechanism.progress === 1
+                    ? 'rifle'
+                    : null
+              }
+              onValueChange={(value) => transform(value as WeaponForm)}
+            >
+              <TabsList className="finish-tabs form-tabs">
+                <TabsTrigger value="scythe" disabled={!ready || mechanismBusy}>
+                  Scythe
+                </TabsTrigger>
+                <TabsTrigger value="rifle" disabled={!ready || mechanismBusy}>
+                  Sniper rifle
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="transformation-readout">
+              <span>{mechanism.phase}</span>
+              <span>{Math.round(mechanism.progress * 100)}%</span>
+            </div>
+            <Slider
+              aria-label="Transformation progress"
+              value={[mechanism.progress * 100]}
+              min={0}
+              max={100}
+              step={0.1}
+              disabled={!ready || mechanism.boltActive}
+              onValueChange={(value) => {
+                const n = Array.isArray(value) ? value[0] : value;
+                setPart(null);
+                setRotate(false);
+                setExplode(0);
+                setView('hero');
+                api.current?.seekTransformation(n / 100);
+              }}
+            />
+            <div className="transformation-actions">
+              <button
+                className="motion-button"
+                disabled={!ready || mechanism.boltActive}
+                onClick={() => {
+                  setPart(null);
+                  setRotate(false);
+                  setExplode(0);
+                  setView('hero');
+                  api.current?.toggleTransformation();
+                }}
+                aria-label={
+                  mechanism.playing
+                    ? 'Pause transformation'
+                    : 'Play transformation'
+                }
+              >
+                {mechanism.playing ? <Pause size={14} /> : <Play size={14} />}
+                <span>
+                  {mechanism.playing
+                    ? 'Pause'
+                    : mechanism.progress > 0 && mechanism.progress < 1
+                      ? 'Resume'
+                      : mechanism.progress === 0
+                        ? 'To rifle'
+                        : 'To scythe'}
+                </span>
+              </button>
+              <button
+                className="speed-button"
+                disabled={!ready}
+                aria-pressed={mechanism.speed === 0.5}
+                onClick={() =>
+                  api.current?.setTransformationSpeed(
+                    mechanism.speed === 0.5 ? 1 : 0.5,
+                  )
+                }
+                title="Toggle slow motion"
+              >
+                {mechanism.speed === 0.5 ? '0.5×' : '1×'} <span>speed</span>
+              </button>
+            </div>
+            <button
+              className="bolt-button"
+              disabled={!ready || mechanism.progress !== 1 || mechanismBusy}
+              onClick={() => api.current?.cycleBolt()}
+            >
+              <Repeat2 size={14} />
+              {mechanism.boltActive ? 'Cycling bolt…' : 'Cycle bolt'}
+              <span>Straight-pull</span>
+            </button>
+          </section>
           <section className="settings-section">
             <div className="section-heading">
               <h2>Surface</h2>
@@ -447,7 +679,7 @@ export default function CrescentViewer() {
               <Switch
                 id="auto-rotate"
                 checked={rotate}
-                disabled={!ready}
+                disabled={!ready || mechanismBusy}
                 onCheckedChange={(v) => {
                   setRotate(v);
                   api.current?.setAutoRotate(v);
@@ -479,7 +711,7 @@ export default function CrescentViewer() {
               min={0}
               max={100}
               step={1}
-              disabled={!ready}
+              disabled={!ready || mechanismBusy}
               onValueChange={(v) => {
                 const n = Array.isArray(v) ? v[0] : v;
                 setExplode(n);
@@ -495,7 +727,7 @@ export default function CrescentViewer() {
             <div className="parts-list">
               {parts.map((p) => (
                 <button
-                  disabled={!ready}
+                  disabled={!ready || mechanismBusy}
                   key={p.id}
                   className={part === p.id ? 'selected' : ''}
                   aria-pressed={part === p.id}
@@ -524,7 +756,7 @@ export default function CrescentViewer() {
           <div className="inspector-bottom">
             <button
               className="export-button"
-              disabled={!ready || exporting}
+              disabled={!ready || exporting || mechanismBusy}
               onClick={exportModel}
             >
               {exporting ? (
@@ -554,8 +786,10 @@ export default function CrescentViewer() {
                   <ArrowUpRight size={12} />
                 </a>
                 . Proportions are estimated from images. This study depicts the
-                extended form; it does not simulate the folding sequence. RWBY
-                and Crescent Rose belong to their respective rights holders.
+                scythe and rifle forms with a reference-inspired folding
+                mechanism. Its hinge clearances and timing are an
+                interpretation, not an official mechanical blueprint. RWBY and
+                Crescent Rose belong to their respective rights holders.
               </div>
             )}
           </div>

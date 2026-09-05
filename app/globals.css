@@ -1017,3 +1017,96 @@ button svg {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Transformation controls share the inspector's neutral surface treatment. */
+.transformation-section {
+  padding-bottom: 20px;
+}
+.form-tabs [data-slot='tabs-trigger'] {
+  font-size: 13px;
+}
+.transformation-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 16px 0 14px;
+  color: #b3bfce;
+  font-size: 12px;
+  min-height: 18px;
+}
+.transformation-readout > span:last-child {
+  font:
+    11px var(--font-geist-mono),
+    monospace;
+  color: #96a4b7;
+}
+.transformation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 15px;
+}
+.motion-button,
+.speed-button,
+.bolt-button {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #292f38;
+  color: #dce3ed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 12px;
+}
+.motion-button:hover,
+.speed-button:hover,
+.bolt-button:hover {
+  background: #394350;
+}
+.speed-button {
+  background: transparent;
+  font-family: var(--font-geist-mono), monospace;
+}
+.speed-button span {
+  font-family: var(--font-geist-sans), sans-serif;
+  color: #939eac;
+  font-size: 11px;
+}
+.speed-button[aria-pressed='true'] {
+  background: #414c5b;
+  color: white;
+}
+.bolt-button {
+  width: 100%;
+  margin-top: 12px;
+  background: transparent;
+  text-align: left;
+}
+.bolt-button span {
+  margin-left: auto;
+  color: #8795a7;
+  font-size: 10px;
+}
+.bolt-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.transformation-section [data-slot='tabs-trigger']:disabled {
+  cursor: not-allowed;
+}
+@media (max-width: 800px) and (min-width: 481px) {
+  .transformation-section {
+    grid-column: 2;
+    grid-row: 1/3;
+  }
+  .weapon-heading {
+    grid-row: 1/3;
+  }
+  .settings-section {
+    border-top: 1px solid var(--border);
+  }
+}
