@@ -30,6 +30,9 @@
 }
 :root,
 .dark {
+  --miku-teal: #65d4ca;
+  --miku-stage: #dbe4e7;
+  --miku-ink: #334b55;
   --background: #191c21;
   --foreground: #edf0f2;
   --card: #202329;
@@ -41,6 +44,244 @@
   --input: #444b55;
   --ring: #aebdce;
   --radius: 6px;
+}
+
+.model-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #14171c;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.model-navigation a {
+  padding: 9px 15px;
+  border-radius: 4px;
+  color: #a8b1bc;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.model-navigation a:hover {
+  color: #fff;
+  background: #252a32;
+}
+.model-navigation a[aria-current='page'] {
+  color: #f2f4f6;
+  background: #353b44;
+}
+.miku-inspector .miku-heading h1 {
+  font-size: 65px;
+  letter-spacing: 0.02em;
+  line-height: 0.89;
+}
+.miku-heading h1 > span {
+  color: var(--miku-teal);
+}
+.miku-japanese {
+  float: right;
+  letter-spacing: 0.04em;
+  color: #8799a4;
+}
+.miku-inspector .miku-heading p {
+  font-size: 16px;
+  line-height: 1.65;
+}
+.miku-stage {
+  background: var(--miku-stage);
+}
+.miku-stage .stage-heading {
+  color: var(--miku-ink);
+}
+.miku-stage .status-dot {
+  background: #365d67;
+}
+.miku-stage .subtle,
+.miku-stage .stage-corner {
+  color: #5b737c;
+}
+.miku-stage .live-indicator {
+  background: #39776e;
+}
+.miku-stage .stage-footer {
+  background: linear-gradient(transparent, #cbd6dc88);
+}
+.miku-stage .interaction-hint,
+.miku-stage .stage-meta {
+  color: #516a74;
+}
+.miku-stage .stage-meta {
+  font-size: 12px;
+  letter-spacing: 0.07em;
+}
+.miku-stage .hint-dot {
+  color: #81969e;
+}
+.miku-stage .viewer-toolbar {
+  background: #f2f5f3ed;
+  border-color: #aebec5;
+  box-shadow: 0 4px 18px #536a7520;
+}
+.miku-stage .camera-presets button,
+.miku-stage .icon-button {
+  color: #506570;
+}
+.miku-stage .camera-presets button:hover,
+.miku-stage .icon-button:hover {
+  background: #d8e0e3;
+  color: #1c333e;
+}
+.miku-stage .camera-presets button.active {
+  background: #d2dde1;
+  color: #263e49;
+}
+.miku-stage .toolbar-divider {
+  background: #c0cdd2;
+}
+.miku-view-caption {
+  position: absolute;
+  top: 68px;
+  left: 28px;
+  z-index: 3;
+  pointer-events: none;
+  font-size: 14px;
+  color: #536c77;
+}
+.miku-loading {
+  background: var(--miku-stage);
+  color: var(--miku-ink);
+}
+.load-percent {
+  margin-left: 12px;
+  font-family: var(--font-geist-mono), monospace;
+  color: #6b848b;
+}
+.miku-wind-label {
+  display: flex;
+  justify-content: space-between;
+  margin: 19px 0 15px;
+  color: #b6bec8;
+  font-size: 14px;
+}
+.miku-wind-label > span {
+  color: #939eab;
+  font-size: 12px;
+}
+.miku-inspector .section-heading h2,
+.miku-inspector .toggle-row,
+.miku-inspector .export-button {
+  font-size: 14px;
+}
+.miku-inspector .finish-tabs [data-slot='tabs-trigger'] {
+  font-size: 14px;
+}
+.miku-details .parts-list button {
+  padding: 10px 5px;
+}
+.miku-details .parts-list strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 450;
+}
+.miku-details .parts-list small {
+  display: block;
+  font-size: 12px;
+  color: #929eac;
+  line-height: 1.55;
+  margin-top: 3px;
+}
+.miku-inspector .setting-note {
+  font-size: 12px;
+}
+.miku-inspector .reference-note {
+  line-height: 1.8;
+}
+@media (min-width: 801px) and (max-height: 840px) {
+  .miku-inspector .miku-heading h1 {
+    font-size: 57px;
+  }
+  .miku-details .parts-list button {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+}
+@media (max-width: 1100px) {
+  .model-navigation a {
+    padding: 8px 11px;
+  }
+  .miku-workshop .brand-sub,
+  .miku-workshop .brand-divider {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto !important;
+    min-height: 104px;
+    gap: 12px;
+    padding: 14px 20px !important;
+  }
+  .model-navigation {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  .model-navigation a {
+    flex: 1;
+    text-align: center;
+  }
+  .miku-stage {
+    min-height: 570px;
+    height: 75dvh;
+  }
+  .miku-inspector .miku-heading h1 {
+    font-size: 64px;
+  }
+  .miku-stage .interaction-hint {
+    display: none;
+  }
+  .miku-inspector .weapon-heading {
+    grid-row: span 2;
+  }
+  .miku-inspector .miku-details {
+    grid-column: 1 / -1;
+  }
+  .miku-details .parts-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .miku-inspector .inspector-bottom {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 520px) {
+  .miku-stage .stage-meta {
+    font-size: 12px;
+    letter-spacing: 0;
+    gap: 12px;
+  }
+  .miku-stage .stage-meta span:first-child {
+    max-width: 155px;
+  }
+  .miku-details .parts-list {
+    display: flex;
+    gap: 4px;
+  }
+  .miku-inspector .weapon-heading {
+    grid-row: auto;
+  }
+  .miku-inspector .miku-heading h1 {
+    font-size: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .miku-workshop *,
+  .model-navigation a {
+    scroll-behavior: auto;
+    transition: none;
+  }
 }
 * {
   box-sizing: border-box;

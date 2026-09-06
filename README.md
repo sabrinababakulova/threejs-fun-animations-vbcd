@@ -4,6 +4,25 @@ An interactive Three.js reconstruction of Ruby Rose’s Crescent Rose from RWBY,
 
 ## Run locally
 
+The **Hatsune Miku** tab opens `/miku`, a second Three.js viewer alongside the
+existing Crescent Rose study. Her body holds a fixed portrait pose; fourteen
+hair bones form two anchored chains with phase-delayed waves and an adjustable
+breeze. The viewer includes Studio/Cel shaded finishes, face/outfit/back camera
+presets, reduced-motion support, orbit/zoom controls, and PNG capture.
+
+Miku uses the attributed Animasa v2.3 MMD mesh, converted to a local glTF asset
+with refined hair/skin surfaces and materials. Costume additions include the
+red `01` arm marking, sleeve control panels, and a chest nameplate. The detailed
+iris and hair-strand effects are shaders. This is an adaptation of the classic
+MMD model, not an exact Project DIVA asset. Full provenance and the original
+distribution readme are in `public/models/miku/CREDITS.md`.
+
+Rebuild the glTF with `node scripts/build-miku-model.mjs`. Run
+`node --experimental-strip-types tests/miku.mjs` to verify the skinned asset,
+stationary body, fixed hair roots, motion bounds, pause behavior, and finishes.
+Native mesh renders were used to check proportions and pose; browser shader
+and UI interaction testing was not performed.
+
 Requires Node 22.13 or newer.
 
 ```sh

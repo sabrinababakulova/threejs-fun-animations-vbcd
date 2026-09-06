@@ -26,6 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ModelNavigation from '@/components/model-navigation';
 import type { CameraView, ViewerAPI } from '@/lib/viewer-scene';
 import type { WeaponForm } from '@/lib/transformation-playback';
 import type { Finish, PartName } from '@/lib/crescent-rose';
@@ -342,9 +343,7 @@ export default function CrescentViewer() {
             <span className="brand-sub">ARMORY</span>
           </span>
         </div>
-        <div className="topbar-center">
-          RWBY <span>·</span> WEAPON STUDY
-        </div>
+        <ModelNavigation active="crescent" />
         <a
           href="https://rwby.fandom.com/wiki/Crescent_Rose"
           target="_blank"
