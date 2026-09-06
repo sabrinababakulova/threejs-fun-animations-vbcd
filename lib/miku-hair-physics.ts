@@ -169,7 +169,7 @@ export function createMikuHairPhysics(
       bone.getWorldPosition(origin);
       restRotation.copy(parentRotation).multiply(base);
       restDirection.copy(restAxis).applyQuaternion(restRotation).normalize();
-      velocity.subVectors(tail, previous).multiplyScalar(Math.exp(-5.5 * STEP));
+      velocity.subVectors(tail, previous).multiplyScalar(Math.exp(-8 * STEP));
       // Elastic stiffness preserves the authored silhouette but allows the
       // heavier ends to lag. Gravity and air resistance act at every step.
       acceleration
@@ -194,7 +194,7 @@ export function createMikuHairPhysics(
         candidate.copy(velocity).divideScalar(STEP),
       );
       force.addScaledVector(cross, -2);
-      acceleration.addScaledVector(force.clampLength(0, 30), 0.8);
+      acceleration.addScaledVector(force.clampLength(0, 30), 0.72);
       candidate
         .copy(tail)
         .add(velocity)
