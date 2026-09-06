@@ -238,7 +238,9 @@ export default function MikuViewer() {
             <div className="stage-meta">
               <span>CHARACTER VOCAL SERIES 01</span>
               <span>
-                {hair && !reducedMotion ? 'HAIR IN MOTION' : 'STILL PORTRAIT'}
+                {hair && !reducedMotion
+                  ? 'REACTS TO YOUR TURN'
+                  : 'STILL PORTRAIT'}
               </span>
             </div>
           </div>
@@ -311,12 +313,18 @@ export default function MikuViewer() {
             <div className="miku-wind-label">
               <span id="wind-label">Breeze</span>
               <span>
-                {wind < 0.5 ? 'Light' : wind < 1.15 ? 'Gentle' : 'Lively'}
+                {wind === 0
+                  ? 'Still air'
+                  : wind < 0.5
+                    ? 'Light'
+                    : wind < 1.15
+                      ? 'Gentle'
+                      : 'Lively'}
               </span>
             </div>
             <Slider
               value={[wind]}
-              min={0.15}
+              min={0}
               max={1.6}
               step={0.05}
               disabled={!ready || !!error || !hair || reducedMotion}
@@ -330,7 +338,7 @@ export default function MikuViewer() {
             <p className="setting-note">
               {reducedMotion
                 ? 'Motion is paused to match your device preference.'
-                : 'Her pose stays still as the hair flows.'}
+                : 'Drag to turn. Her hair swings and settles.'}
             </p>
           </section>
           <section className="settings-section miku-details">

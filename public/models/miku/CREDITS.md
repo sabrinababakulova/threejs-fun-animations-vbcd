@@ -14,7 +14,7 @@ https://piapro.net/intl/en_for_creators.html
 
 Viewer adaptation: converted to glTF, curved midpoint subdivision for hair,
 skin and clothing, adjusted materials, a stationary portrait pose, and
-procedural twin-tail motion. This is a fan-made study using the classic MMD
+spring-bone twin-tail physics driven by orbit gestures. This is a fan-made study using the classic MMD
 mesh, not an extracted Project DIVA game asset or an exact scan of the references.
 
 Rebuild the adapted mesh: `node scripts/build-miku-model.mjs`.

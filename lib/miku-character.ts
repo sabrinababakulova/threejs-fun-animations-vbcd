@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { createMikuHairPhysics } from './miku-hair-physics.ts';
 
 export type MikuFinish = 'studio' | 'toon';
 
@@ -160,32 +161,13 @@ export function prepareMiku(root: T.Group, eyeTexture?: T.Texture) {
       side: name.startsWith('左') ? 1 : -1,
       depth: '１２３４５６７'.indexOf(name.slice(-1)),
     }));
-  const rotation = new T.Quaternion(),
-    euler = new T.Euler();
-  function updateHair(time: number, strength: number) {
-    for (const { bone, base, side, depth } of hair) {
-      // Independent phase per side, with lag and greater amplitude toward tips.
-      // At depth 0 there is exactly zero motion, securing hair in the clips.
-      const amplitude = strength * Math.min(depth / 4, 1);
-      const phase = time * 1.22 - depth * 0.66 + side * 0.7;
-      euler.set(
-        amplitude *
-          (0.045 * Math.sin(phase) + 0.018 * Math.sin(time * 0.57 - depth)),
-        amplitude * 0.018 * Math.sin(phase * 0.8 + 0.6),
-        amplitude *
-          (0.055 * Math.sin(phase + 0.5) +
-            0.025 * Math.sin(time * 0.63 + side) * side),
-      );
-      rotation.setFromEuler(euler);
-      bone.quaternion.copy(base).multiply(rotation);
-    }
-  }
+  const hairPhysics = createMikuHairPhysics(root, hair, bones);
   return {
     root,
     bones,
     hair,
     meshes,
-    updateHair,
+    hairPhysics,
     setFinish(finish: MikuFinish) {
       meshes.forEach((mesh) => {
         mesh.material = (finish === 'studio' ? physical : toon).get(mesh)!;

@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createStudioEnvironment } from './studio-environment';
 import { prepareMiku, type MikuFinish } from './miku-character';
 import { addMikuDetails } from './miku-details';
+import { createOrbitMotionTracker } from './miku-hair-physics';
 
 export type MikuView = 'hero' | 'front' | 'back' | 'face' | 'outfit';
 
@@ -118,8 +119,8 @@ export function createMikuScene(
   let costumeDetails: ReturnType<typeof addMikuDetails> | null = null;
   let hairEnabled = !motionPreference.matches,
     wind = 0.8,
-    elapsed = 0,
     lastTime = 0;
+  const orbitMotion = createOrbitMotionTracker();
   let currentView: MikuView = 'hero',
     manual = false;
   let transition: {
@@ -130,6 +131,7 @@ export function createMikuScene(
     target: T.Vector3;
   } | null = null;
   function setView(view: MikuView, animate = true) {
+    orbitMotion.reset();
     currentView = view;
     manual = false;
     const close = view === 'face',
@@ -195,12 +197,18 @@ export function createMikuScene(
   };
   renderer.domElement.addEventListener('webglcontextlost', onLost);
   const onMotionPreference = () => {
+    orbitMotion.reset();
     hairEnabled = !motionPreference.matches;
     host.dispatchEvent(
       new CustomEvent('miku-motion-preference', { detail: hairEnabled }),
     );
   };
   motionPreference.addEventListener('change', onMotionPreference);
+  const onVisibility = () => {
+    orbitMotion.reset();
+    lastTime = 0;
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 
   async function load() {
     // Track both resources even when one fails so late completion is disposed.
@@ -254,11 +262,12 @@ export function createMikuScene(
 
   renderer.setAnimationLoop((now: number) => {
     if (disposed) return;
-    const dt = Math.min((now - (lastTime || now)) / 1000, 0.04);
+    const dt = Math.min((now - (lastTime || now)) / 1000, 0.1);
     lastTime = now;
-    if (document.hidden) return;
-    if (hairEnabled && !motionPreference.matches) elapsed += dt;
-    character?.updateHair(elapsed, wind);
+    if (document.hidden) {
+      orbitMotion.reset();
+      return;
+    }
     if (transition) {
       const t = Math.min((now - transition.start) / 650, 1),
         eased = t * t * (3 - 2 * t);
@@ -271,6 +280,14 @@ export function createMikuScene(
       if (t === 1) transition = null;
     }
     controls.update();
+    const motionActive = hairEnabled && !motionPreference.matches;
+    const motion = orbitMotion.sample(
+      controls.getAzimuthalAngle(),
+      controls.getPolarAngle(),
+      dt,
+      motionActive && manual,
+    );
+    if (motionActive) character?.hairPhysics.advance(dt, wind, motion);
     renderer.render(scene, camera);
   });
   return {
@@ -280,6 +297,7 @@ export function createMikuScene(
     },
     setHair(enabled: boolean) {
       hairEnabled = enabled;
+      orbitMotion.reset();
     },
     setWind(value: number) {
       wind = T.MathUtils.clamp(value, 0, 1.6);
@@ -317,6 +335,7 @@ export function createMikuScene(
       controls.dispose();
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       motionPreference.removeEventListener('change', onMotionPreference);
+      document.removeEventListener('visibilitychange', onVisibility);
       costumeDetails?.dispose();
       costumeDetails = null;
       character?.dispose();

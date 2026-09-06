@@ -6,8 +6,17 @@ An interactive Three.js reconstruction of Ruby Rose’s Crescent Rose from RWBY,
 
 The **Hatsune Miku** tab opens `/miku`, a second Three.js viewer alongside the
 existing Crescent Rose study. Her body holds a fixed portrait pose; fourteen
-hair bones form two anchored chains with phase-delayed waves and an adjustable
-breeze. The viewer includes Studio/Cel shaded finishes, face/outfit/back camera
+hair bones form two anchored chains with a spring simulation and adjustable
+breeze. Dragging the camera acts as a virtual turntable: angular acceleration
+and centrifugal forces make the hair lag, flare and swing through reversals.
+Gravity, elastic stiffness and damping settle it after release. Capsule
+colliders around the posed body and floor constraints limit clipping, while
+fixed segment lengths prevent stretching. The simulation steps at 240 Hz,
+independently of rendering. Camera presets, zoom/pan and tab visibility changes
+do not inject turn impulses. Set Breeze to **Still air** to isolate the response
+to dragging; the motion switch pauses the entire simulation.
+
+The viewer includes Studio/Cel shaded finishes, face/outfit/back camera
 presets, reduced-motion support, orbit/zoom controls, and PNG capture.
 
 Miku uses the attributed Animasa v2.3 MMD mesh, converted to a local glTF asset
@@ -19,7 +28,8 @@ distribution readme are in `public/models/miku/CREDITS.md`.
 
 Rebuild the glTF with `node scripts/build-miku-model.mjs`. Run
 `node --experimental-strip-types tests/miku.mjs` to verify the skinned asset,
-stationary body, fixed hair roots, motion bounds, pause behavior, and finishes.
+stationary body, fixed hair roots, drag speed and release response, collisions,
+settling, angle wrapping, pause behavior, 30/60/144 FPS consistency, and finishes.
 Native mesh renders were used to check proportions and pose; browser shader
 and UI interaction testing was not performed.
 
