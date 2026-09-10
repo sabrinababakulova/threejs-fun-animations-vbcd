@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function ModelNavigation({
   active,
 }: {
-  active: 'crescent' | 'miku';
+  active: 'crescent' | 'miku' | 'navier-stokes';
 }) {
   return (
     <nav className="model-navigation" aria-label="Choose a 3D model">
@@ -12,6 +12,12 @@ export default function ModelNavigation({
       </Link>
       <Link href="/miku" aria-current={active === 'miku' ? 'page' : undefined}>
         Hatsune Miku
+      </Link>
+      <Link
+        href="/navier-stokes"
+        aria-current={active === 'navier-stokes' ? 'page' : undefined}
+      >
+        Navier–Stokes
       </Link>
     </nav>
   );

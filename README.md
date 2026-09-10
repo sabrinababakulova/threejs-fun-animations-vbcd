@@ -76,3 +76,56 @@ npm run build
 The model check verifies finite vertices/normals, assembly separation/reset, and an actual GLB export/import round trip preserving meshes and bounds. It also writes `outputs/crescent-rose.glb` for reuse. The animated GLB is reimported and its intermediate and rifle poses checked. The transformation checks sample 201 poses, verify fixed hinge axes and rigid geometry, exercise pause/seeking and 30/60/144 FPS timing, and test 30 return cycles for drift. Offline Three.js SVG pose sheets and native SceneKit renders of the exported geometry were inspected against the production silhouette and folded-form study. These inspect geometry and material proportions; they do not substitute for testing the website’s WebGL effects. Regression checks also keep the shoulder details attached, verify stock placement, and time the one-second fast mode. The entire starter's lint command reports existing findings in unused vendored UI components; project-specific code is checked separately.
 
 Feature-detected `inspect_crescent_rose`, `start_crescent_rose_transformation`, and `read_crescent_rose_state` WebMCP tools expose inspection, animation start, and playback readback when the browser supports `document.modelContext`. Inputs are validated and registrations are removed on unmount. No supported WebMCP validation context was available during implementation; their browser contracts remain unverified. Browser UI interaction tests were not run.
+
+## Navier–Stokes swirl
+
+The **Navier–Stokes** tab opens `/navier-stokes`, a third Three.js study inspired
+by the supplied vortex image. Eighty-four tapered, elliptical strands travel
+inward and out along both ends of the axis. The controls provide viscosity
+(0.015–0.300 in dimensionless units), playback speed (0.25–3×), pause, reset,
+a singularity timeline, flow guides, three camera views, zoom, and PNG capture.
+Reduced-motion preferences pause initial playback; explicitly pressing Play
+opts into motion. Background tabs suspend rendering and resume without a jump.
+
+The regular flow is an analytic **Burgers vortex**, using radial velocity
+`u_r = -a r/2`, axial velocity `u_y = a y`, and angular velocity
+`omega(r) = Gamma/(2 pi r²) (1 - exp(-a r²/(4 nu)))`.
+Here `a = 0.65` and `Gamma = 22`. Increasing viscosity broadens the core
+`sqrt(4 nu/a)` and lowers peak angular rotation. Path positions use analytic
+radial/axial motion and Simpson integration of angular motion. Sampling becomes
+finer at low viscosity. A single merged mesh uses a custom physical-material
+vertex shader to move tapered packets along these paths without rebuilding
+geometry each animation frame. Color encodes angular rate relative to the
+current peak, not absolute linear speed. Changing playback speed changes only
+the clock. Camera movement does not drive the fluid.
+
+**Singularity is a schematic**, not the paper's full solution or a numerical
+Navier–Stokes solver. It scales the Burgers geometry using the paper's Section 2
+length exponents: radial `tau^0.5`, axial `tau^(0.5-h)`, with `h = 0.005` and
+`tau = 1 - t/T`. Both dimensions shrink; radius shrinks faster. Its angular
+clock accelerates as `tau^(-1-h)`. Playback stops at `t/T = 0.99` to keep all
+values finite. Scrubbing pauses, and Replay restarts a finished collapse.
+The construction's pressure, forcing, oscillatory corrections, and energy
+balance are not computed in this viewer.
+
+References consulted:
+
+- [OpenAI — On the Navier–Stokes Millennium Prize Problem](https://openai.com/index/navier-stokes-solution/): visual reference and inward-flow/axial-stretching description.
+- [OpenAI — Finite Time Blowup for Navier–Stokes, §2](https://cdn.openai.com/pdf/32d9f210-8b73-45e0-91bc-82a30aef8a9a/navier-stokes.pdf): shrinking-core and velocity scaling.
+- [Gallay & Maekawa — Three-dimensional stability of Burgers vortices](https://arxiv.org/abs/1002.2489): analytic background vortex and viscous core.
+- [Three.js — BufferGeometry](https://threejs.org/docs/pages/BufferGeometry.html): merged attributes for GPU rendering.
+
+Implementation: `lib/navier-stokes-flow.ts` contains the field and playback,
+`lib/navier-stokes-model.ts` builds the strands and their shader,
+`lib/navier-stokes-scene.ts` owns the renderer and its lifecycle, and
+`components/navier-stokes-viewer.tsx` supplies the interface.
+
+Run `node --experimental-strip-types tests/navier-stokes.mjs` to check finite
+geometry and normals across the viscosity range, incompressibility, trajectories
+against velocity derivatives, inward packet motion, viscosity response,
+30/60/144 FPS playback consistency, pause, and the singularity cutoff.
+TypeScript, project-specific lint, and the production build are also checked.
+A native SceneKit render of the baked strand geometry was inspected against
+the reference; this checks shape and color placement, not the browser shader.
+The local route returns HTTP 200. Browser/WebGL interaction testing has not
+been performed.
